@@ -78,16 +78,19 @@ Original VB CODE
 """
 import os
 import hashlib
-
+import datetime
 import logging
 from lxml import etree
+import yaml
 
 import sys
 
 DIRECTORY_REGEX = "^\d+(p\d+(_\d+)?)?(v\d+(_\d+)?)?(i\d+(_\d+)?)?(m\d+(_\d+)?)?$"
 
+class ValidationError(Exception):
+    pass
 
-class InvalidChecksum(Exception):
+class InvalidChecksum(ValidationError):
     pass
 
 
@@ -361,8 +364,53 @@ def find_errors_marc(filename):
         yield "Unable to validate {}".format(filename)
 
 
-def find_errors_meta(filename):
-    raise NotImplementedError
+def parse_yaml(filename):
+    with open(filename, "r") as f:
+        data = yaml.load(f)
+        return data
+
+
+def find_errors_meta(filename, path):
+    """
+    Validate meta.yml file
+    could also validate that the values are correct by comparing with the images
+
+    Args:
+        filename:
+
+    Yields: Error messages
+
+    """
+    def find_pagedata_errors(metadata):
+        pages = metadata["pagedata"]
+        for image_name, attributes  in pages.items():
+            if not os.path.exists(os.path.join(path, image_name)):
+                yield "The pagedata {} contains an nonexistent file {}".format(filename, image_name)
+            if attributes:
+                pass
+
+    def find_capture_date_errors(metadata):
+        capture_date = metadata["capture_date"]
+        if not isinstance(capture_date, datetime.datetime):
+            yield "data in capture_date is not a date format"
+
+    try:
+        metadata = parse_yaml(filename=filename)
+
+        try:
+            for error in find_pagedata_errors(metadata):
+                yield error
+        except KeyError as e:
+            yield "{} is missing key, {}".format(filename, e)
+
+        try:
+            for error in find_capture_date_errors(metadata):
+                yield error
+        except KeyError as e:
+            yield "{} is missing key, {}".format(filename, e)
+    except yaml.YAMLError as e:
+        yield "Unable to read {}. Reason:{}".format(filename, e)
+
 
 
 def process_directory(path: str):
@@ -387,14 +435,18 @@ def process_directory(path: str):
     # for failing_checksum in find_failing_checksums(path=path, report=checksum_report):
     #     print(failing_checksum)
 
-    logger.info("Validating marc.xml")
-    for error in find_errors_marc(filename=os.path.join(path, "marc.xml")):
+    marc_file = os.path.join(path, "marc.xml")
+    logger.info("Validating {}".format(marc_file))
+    for error in find_errors_marc(filename=marc_file):
         print(error)
     else:
-        logger.info("marc.xml successfully validates")
+        logger.info("{} successfully validated".format(marc_file))
 
     # TODO: validate other xml files, currently ALTO
-    for error in find_errors_meta(filename=os.path.join(path, "marc.xml")):
+    yml_file = os.path.join(path, "meta.yml")
+    logger.info("Validating {}".format(yml_file))
+    for error in find_errors_meta(filename=yml_file, path=path):
         print(error)
-    # TODO: Validate that the meta.yml file is valid; could also validate that the values are correct by comparing with the images
+    else:
+        logger.info("{} successfully validated".format(yml_file))
     pass
