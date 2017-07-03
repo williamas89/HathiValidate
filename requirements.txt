@@ -1,0 +1,5 @@
+pytest
+tox
+pytest-runner
+lxml
+PyYAML
