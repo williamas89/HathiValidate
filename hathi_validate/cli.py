@@ -21,10 +21,8 @@ def main():
     args = parser.parse_args()
 
     configure_logging.configure_logger(debug_mode=args.debug, log_file=args.log_debug)
-    logger.debug("MESSSSAGE")
 
     for pkg in package.get_dirs(args.path):
-        # raise NotImplementedError
         logger.info("Checking {}".format(pkg))
         process.process_directory(pkg)
 
