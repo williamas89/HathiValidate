@@ -64,9 +64,9 @@ setup(
     ],
     options={
         "build_exe": {
-            "includes": ["queue", "atexit", "six", "appdirs"] + pytest.freeze_includes(),
+            "includes": ["queue", "atexit", "six", "appdirs", 'lxml'] + pytest.freeze_includes(),
             "include_msvcr": True,
-            "packages": ["os", "packaging"],
+            "packages": ["lxml", "os", "packaging"],
             # "packages": ["os", "lxml", "packaging"],
             "excludes": ["tkinter"],
             "include_files": INCLUDE_FILES,
