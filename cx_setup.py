@@ -58,16 +58,15 @@ setup(
     version=hathi_validate.__version__,
     author=hathi_validate.__author__,
     author_email=hathi_validate.__author_email__,
-    packages=[
-        "hathi_validate",
-        "tests"
-    ],
+    # packages=[
+    #     "hathi_validate",
+    #     "tests"
+    # ],
     options={
         "build_exe": {
-            "includes": ["queue", "atexit", "six", "appdirs"] + pytest.freeze_includes(),
+            "includes": ["queue", "atexit", "appdirs"] + pytest.freeze_includes(),
             "include_msvcr": True,
-            "packages": ["lxml", "os", "packaging"],
-            # "packages": ["os", "lxml", "packaging"],
+            "packages": ["os", "lxml", "packaging", "six", "appdirs", "hathi_validate", "tests"],
             "excludes": ["tkinter"],
             "include_files": INCLUDE_FILES,
         },
