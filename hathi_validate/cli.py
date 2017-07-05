@@ -5,6 +5,7 @@ import sys
 
 from hathi_validate import package, process, configure_logging
 
+
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("path", help="Path to the hathipackages")
@@ -31,6 +32,7 @@ def main():
 
 
 if __name__ == '__main__':
+
     if len(sys.argv) > 1 and sys.argv[1] == "--pytest":
         import pytest  # type: ignore
 
