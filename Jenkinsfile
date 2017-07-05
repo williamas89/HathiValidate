@@ -114,5 +114,29 @@ pipeline {
                 )
             }
         }
+        stage("Deploy - Staging"){
+            agent any
+            when {
+                expression{params.DEPLOY == true && params.PACKAGE == true}
+            }
+            steps {
+                deleteDir()
+                unstash "msi"
+                sh "rsync -rv ./ \"${env.SCCM_STAGING_FOLDER}/${params.PROJECT_NAME}/\""
+                input("Deploy to production?")
+            }
+        }
+
+        stage("Deploy - SCCM upload"){
+            agent any
+            when {
+                expression{params.DEPLOY == true && params.PACKAGE == true}
+            }
+            steps {
+                deleteDir()
+                unstash "msi"
+                sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
+            }
+        }
      }
   }
