@@ -16,7 +16,7 @@ MSVC = os.path.join(PYTHON_INSTALL_DIR, 'vcruntime140.dll')
 INCLUDE_FILES = [
                     # "documentation.url",
                     #     TODO: BUILD DOCUMENTATION
-                ] + pytest.freeze_includes()
+                ]
 
 # directory_table = [
 #     (
@@ -68,6 +68,7 @@ setup(
             "include_msvcr": True,
             "packages": ["os", "lxml", "packaging"],
             "excludes": ["tkinter"],
+            "include_files": INCLUDE_FILES,
         },
         # "bdist_msi": {
         #     "data": {
