@@ -51,5 +51,68 @@ pipeline {
               )
           }
         }
+        stage("Packaging") {
+            when{
+                expression{params.PACKAGE == true}
+            }
+            steps {
+                parallel(
+                        "Windows Wheel": {
+                            node(label: "Windows") {
+                                deleteDir()
+                                unstash "Source"
+                                bat "${env.PYTHON3} setup.py bdist_wheel --universal"
+                                archiveArtifacts artifacts: "dist/**", fingerprint: true
+                            }
+                        },
+                        "Windows CX_Freeze MSI": {
+                            node(label: "Windows") {
+                                deleteDir()
+                                unstash "Source"
+                                bat """ ${env.PYTHON3} -m venv .env
+                              call .env/Scripts/activate.bat
+                              pip install -r requirements.txt
+                              ${env.PYTHON3} cx_setup.py bdist_msi --add-to-path=true
+                              """
+
+                                dir("dist"){
+                                    stash includes: "*.msi", name: "msi"
+                                }
+
+                            }
+                            node(label: "Windows") {
+                                deleteDir()
+                                git url: 'https://github.com/UIUCLibrary/ValidateMSI.git'
+                                unstash "msi"
+                                // validate_msi.py
+
+                                bat """
+                      ${env.PYTHON3} -m venv .env
+                      call .env/Scripts/activate.bat
+                      pip install setuptools --upgrade
+                      pip install -r requirements.txt
+                      python setup.py install
+
+                      echo Validating msi file(s)
+                      FOR /f "delims=" %%A IN ('dir /b /s *.msi') DO (
+                        python validate_msi.py ^"%%A^" frozen.yml
+                        if not %errorlevel%==0 (
+                          echo errorlevel=%errorlevel%
+                          exit /b %errorlevel%
+                          )
+                        )
+                      """
+                                archiveArtifacts artifacts: "*.msi", fingerprint: true
+                            }
+                        },
+                        "Source Release": {
+                            deleteDir()
+                            unstash "Source"
+                            sh "${env.PYTHON3} setup.py sdist"
+                            archiveArtifacts artifacts: "dist/**", fingerprint: true
+                        }
+                )
+            }
+        }
      }
   }
