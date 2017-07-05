@@ -3,3 +3,4 @@ tox
 pytest-runner
 lxml
 PyYAML
+mypy
