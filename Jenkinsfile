@@ -3,7 +3,7 @@ pipeline {
     parameters {
       string(name: "PROJECT_NAME", defaultValue: "Hathi Validate", description: "Name given to the project")
       booleanParam(name: "UNIT_TESTS", defaultValue: true, description: "Run Automated Unit Tests")
-      booleanParam(name: "STATIC_ANALYSIS", defaultValue: true, description: "Run static analysis tests")
+//      booleanParam(name: "STATIC_ANALYSIS", defaultValue: true, description: "Run static analysis tests")
       booleanParam(name: "PACKAGE", defaultValue: true, description: "Create a Packages")
       booleanParam(name: "DEPLOY", defaultValue: false, description: "Deploy SCCM")
       booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
@@ -72,8 +72,7 @@ pipeline {
                                 bat """ ${env.PYTHON3} -m venv .env
                               call .env/Scripts/activate.bat
                               pip install -r requirements.txt
-                              pip freeze
-                              ${env.PYTHON3} cx_setup.py bdist_msi --add-to-path=true
+                              python cx_setup.py bdist_msi --add-to-path=true
                               """
 
                                 dir("dist"){
