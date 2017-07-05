@@ -9,3 +9,4 @@ cx_Freeze
 six
 appdirs
 packaging
+sphinx
