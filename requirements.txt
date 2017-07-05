@@ -4,3 +4,8 @@ pytest-runner
 lxml
 PyYAML
 mypy
+wheel
+cx_Freeze
+six
+appdirs
+packaging
