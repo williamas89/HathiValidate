@@ -4,10 +4,15 @@ import argparse
 import sys
 
 from hathi_validate import package, process, configure_logging
+import hathi_validate
 
 
 def get_parser():
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--version',
+        action='version',
+        version=hathi_validate.__version__)
     parser.add_argument("path", help="Path to the hathipackages")
     debug_group = parser.add_argument_group("Debug")
     debug_group.add_argument(
