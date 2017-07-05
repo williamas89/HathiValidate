@@ -82,7 +82,7 @@ import datetime
 import logging
 from lxml import etree
 import yaml
-
+import typing
 import sys
 
 DIRECTORY_REGEX = "^\d+(p\d+(_\d+)?)?(v\d+(_\d+)?)?(i\d+(_\d+)?)?(m\d+(_\d+)?)?$"
@@ -253,10 +253,11 @@ in subfieldcodeDataType  the pattern
   <xsd:simpleType name="idDataType" id="id.st">
     <xsd:restriction base="xsd:ID"/>
   </xsd:simpleType>
-</xsd:schema>"""
+</xsd:schema>
+"""
 
 
-def find_missing_files(path: str) -> str:
+def find_missing_files(path: str) -> typing.Iterable[str]:
     """
         check for expected files exist on the path
     Args:
