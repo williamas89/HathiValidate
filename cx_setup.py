@@ -1,5 +1,6 @@
 import os
 
+import sys
 from cx_Freeze import setup, Executable
 import pytest
 import hathi_validate
@@ -13,10 +14,12 @@ import platform
 PYTHON_INSTALL_DIR = os.path.dirname(os.path.dirname(os.__file__))
 MSVC = os.path.join(PYTHON_INSTALL_DIR, 'vcruntime140.dll')
 
+
 INCLUDE_FILES = [
-                    # "documentation.url",
-                    #     TODO: BUILD DOCUMENTATION
-                ]
+    # "tests"
+    # "documentation.url",
+    #     TODO: BUILD DOCUMENTATION
+]
 
 # directory_table = [
 #     (
@@ -51,6 +54,16 @@ INCLUDE_FILES = [
 if os.path.exists(MSVC):
     INCLUDE_FILES.append(MSVC)
 
+build_exe_options ={
+    "includes": ["queue", "atexit", "appdirs", 'pkg_resources'] + pytest.freeze_includes(),
+    "include_msvcr": True,
+    "packages": ["os", "lxml", "packaging", "six", "appdirs", "tests", "hathi_validate"],
+    "excludes": ["tkinter"],
+    "namespace_packages": ["tests"],
+    "include_files": INCLUDE_FILES,
+
+}
+
 target_name = "hathivalidate.exe" if platform.system() == "Windows" else "hathivalidate"
 setup(
     name=hathi_validate.FULL_TITLE,
@@ -58,18 +71,8 @@ setup(
     version=hathi_validate.__version__,
     author=hathi_validate.__author__,
     author_email=hathi_validate.__author_email__,
-    # packages=[
-    #     "hathi_validate",
-    #     "tests"
-    # ],
     options={
-        "build_exe": {
-            "includes": ["queue", "atexit", "appdirs"] + pytest.freeze_includes(),
-            "include_msvcr": True,
-            "packages": ["os", "lxml", "packaging", "six", "appdirs", "hathi_validate", "tests"],
-            "excludes": ["tkinter"],
-            "include_files": INCLUDE_FILES,
-        },
+        "build_exe": build_exe_options,
         # "bdist_msi": {
         #     "data": {
         #         "Shortcut": shortcut_table,
@@ -78,6 +81,6 @@ setup(
         # }
     },
     executables=[Executable("hathi_validate/cli.py",
-                            targetName=target_name)],
+                            targetName=target_name, base="Console")],
 
 )
