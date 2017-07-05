@@ -253,7 +253,8 @@ in subfieldcodeDataType  the pattern
   <xsd:simpleType name="idDataType" id="id.st">
     <xsd:restriction base="xsd:ID"/>
   </xsd:simpleType>
-</xsd:schema>"""
+</xsd:schema>
+"""
 
 
 def find_missing_files(path: str) -> typing.Iterable[str]:
