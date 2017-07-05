@@ -1,5 +1,8 @@
 import logging
 import argparse
+
+import sys
+
 from hathi_validate import package, process, configure_logging
 
 def get_parser():
@@ -28,4 +31,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "--pytest":
+        import pytest
+
+        sys.exit(pytest.main(sys.argv[2:]))
+    else:
+        main()
