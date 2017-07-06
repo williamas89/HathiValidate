@@ -19,7 +19,7 @@ class Result:
         return "{}[{}]{}".format(Result.__name__, self.result_type, message)
 
 
-class ResultSummary(Collection):
+class ResultSummary:
     def __init__(self):
         self.results = []
         self.source = None
