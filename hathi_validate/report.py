@@ -44,8 +44,8 @@ class TextReport(AbsReport):
         sorted_results = sorted(results, key=lambda r: r.source)
         grouped = itertools.groupby(sorted_results, key=lambda r: r.source)
         with open(self.file, "w", encoding="utf8") as w:
-            w.write("Validation Results\n")
+            w.write("Validation Results\n\n")
             for source_group in grouped:
-                w.write("\n\n{}\n".format(source_group[0]))
+                w.write("\n{}\n".format(source_group[0]))
                 for res in source_group[1]:
                     w.write("{}\n".format(res.message))
