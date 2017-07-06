@@ -16,7 +16,7 @@ class Result:
             message = '{}: "{}"'.format(self.source, self.message)
         else:
             message = '"{}"'.format(self.message)
-        return "{}[{}]{}".format(__class__, self.result_type, message)
+        return "{}[{}]{}".format(Result.__name__, self.result_type, message)
 
 
 class ResultSummary(Collection):
