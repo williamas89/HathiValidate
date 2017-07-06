@@ -1,7 +1,5 @@
 import abc
 import typing
-from collections.abc import Collection
-
 
 class Result:
 
