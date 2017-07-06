@@ -3,7 +3,7 @@ import argparse
 
 import sys
 
-from hathi_validate import package, process, configure_logging
+from hathi_validate import package, process, configure_logging, report
 import hathi_validate
 
 
@@ -36,10 +36,10 @@ def main():
         logger.info("Checking {}".format(pkg))
         errors += process.process_directory(pkg)
 
-    print("================")
-
-    for i, error in enumerate(errors):
-        print(error)
+    console_reporter = report.Report(report.ConsoleReport())
+    text_reporter = report.Report(report.TextReport("dummy.txt"))
+    console_reporter.generate(errors)
+    text_reporter.generate(errors)
 
 if __name__ == '__main__':
 
