@@ -335,7 +335,6 @@ def process_directory(path: str):
     # TODO: validate other xml files, currently ALTO
     yml_file = os.path.join(path, "meta.yml")
     logger.info("Validating {}".format(yml_file))
-    # yml_checksum_report_builder = result.SummaryDirector(source=yml_file)
     yml_errors = []
     for error in find_errors_meta(filename=yml_file, path=path):
         print(error.message)
