@@ -14,6 +14,7 @@ def get_parser():
         action='version',
         version=hathi_validate.__version__)
     parser.add_argument("path", help="Path to the hathipackages")
+    parser.add_argument("--save-report", dest="report_name", help="Save report to a file")
     debug_group = parser.add_argument_group("Debug")
     debug_group.add_argument(
         '--debug',
@@ -37,9 +38,10 @@ def main():
         errors += process.process_directory(pkg)
 
     console_reporter = report.Report(report.ConsoleReport())
-    text_reporter = report.Report(report.TextReport("dummy.txt"))
     console_reporter.generate(errors)
-    text_reporter.generate(errors)
+    if args.report_name:
+        text_reporter = report.Report(report.TextReport(args.report_name))
+        text_reporter.generate(errors)
 
 if __name__ == '__main__':
 
