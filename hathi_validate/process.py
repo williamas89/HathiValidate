@@ -80,15 +80,21 @@ import os
 import hashlib
 import datetime
 import logging
+
+import itertools
 from lxml import etree
 import yaml
 import typing
 import sys
 
+from hathi_validate import result
+
 DIRECTORY_REGEX = "^\d+(p\d+(_\d+)?)?(v\d+(_\d+)?)?(i\d+(_\d+)?)?(m\d+(_\d+)?)?$"
+
 
 class ValidationError(Exception):
     pass
+
 
 class InvalidChecksum(ValidationError):
     pass
@@ -257,7 +263,7 @@ in subfieldcodeDataType  the pattern
 """
 
 
-def find_missing_files(path: str) -> typing.Iterable[str]:
+def find_missing_files(path: str) -> result.ResultSummary:
     """
         check for expected files exist on the path
     Args:
@@ -272,12 +278,16 @@ def find_missing_files(path: str) -> typing.Iterable[str]:
         "marc.xml",
         "meta.yml",
     ]
+
+    summery_builder = result.SummaryDirector(source=path)
+
     for file in expected_files:
         if not os.path.exists(os.path.join(path, file)):
-            yield file
+            summery_builder.add_error("Missing file: {}".format(file))
+    return summery_builder.construct()
 
 
-def find_extra_subdirectory(path):
+def find_extra_subdirectory(path) -> result.ResultSummary:
     """
         Check path for any subdirectories
     Args:
@@ -286,9 +296,11 @@ def find_extra_subdirectory(path):
     Yields: Any subdirectory
 
     """
+    summary_builder = result.SummaryDirector(source=path)
     for item in os.scandir(path):
         if item.is_dir():
-            yield item.path
+            summary_builder.add_error("Extra subdirectory {}".format(item.name))
+    return summary_builder.construct()
 
 
 def parse_checksum(line):
@@ -312,7 +324,7 @@ def calculate_md5(filename, chunk_size=8192):
         return md5.hexdigest()
 
 
-def find_failing_checksums(path, report):
+def find_failing_checksums(path, report) -> result.ResultSummary:
     """
         validate that the checksums in the *.fil file match
 
@@ -325,18 +337,23 @@ def find_failing_checksums(path, report):
     """
 
     logger = logging.getLogger(__name__)
-
-    for report_md5_hash, filename in extracts_checksums(report):
-        logger.info("Calculating the md5 checksum hash for {}".format(filename))
-        file_path = os.path.join(path, filename)
-        try:
-            file_md5_hash = calculate_md5(filename=file_path)
-        except FileNotFoundError as e:
-            raise
-        if file_md5_hash != report_md5_hash:
-            yield file_path
-        else:
-            logger.info("{} successfully matches md5 hash in {}".format(filename, os.path.basename(report)))
+    report_builder = result.SummaryDirector(source=path)
+    try:
+        for report_md5_hash, filename in extracts_checksums(report):
+            logger.info("Calculating the md5 checksum hash for {}".format(filename))
+            file_path = os.path.join(path, filename)
+            try:
+                file_md5_hash = calculate_md5(filename=file_path)
+                if file_md5_hash != report_md5_hash:
+                    report_builder.add_error("Checksum doesn't match for {}".format(filename))
+                else:
+                    logger.info("{} successfully matches md5 hash in {}".format(filename, os.path.basename(report)))
+            except FileNotFoundError as e:
+                logger.info("Unable to run checksum for missing file, {}".format(filename))
+                report_builder.add_error("Unable to run checksum for missing file, {}".format(filename))
+    except FileNotFoundError as e:
+        report_builder.add_error("File missing")
+    return report_builder.construct()
 
 
 def extracts_checksums(report):
@@ -346,7 +363,7 @@ def extracts_checksums(report):
             yield md5, filename
 
 
-def find_errors_marc(filename):
+def find_errors_marc(filename) -> result.ResultSummary:
     """
     Validate the MARC file
 
@@ -356,13 +373,21 @@ def find_errors_marc(filename):
     Returns:
 
     """
+    summary_builder = result.SummaryDirector(source=filename)
+
     xsd = etree.XML(XSD)
     scheme = etree.XMLSchema(xsd)
-    with open(filename, "r") as f:
-        raw_data = f.read()
-    doc = etree.fromstring(raw_data)
-    if not scheme.validate(doc):
-        yield "Unable to validate {}".format(filename)
+    try:
+        with open(filename, "r", encoding="utf8") as f:
+            raw_data = f.read()
+        doc = etree.fromstring(raw_data)
+        if not scheme.validate(doc):
+            summary_builder.add_error("Unable to validate")
+    except FileNotFoundError:
+        summary_builder.add_error("File missing")
+    except etree.XMLSyntaxError as e:
+        summary_builder.add_error("Syntax error: {}".format(e))
+    return summary_builder.construct()
 
 
 def parse_yaml(filename):
@@ -382,9 +407,10 @@ def find_errors_meta(filename, path):
     Yields: Error messages
 
     """
+
     def find_pagedata_errors(metadata):
         pages = metadata["pagedata"]
-        for image_name, attributes  in pages.items():
+        for image_name, attributes in pages.items():
             if not os.path.exists(os.path.join(path, image_name)):
                 yield "The pagedata {} contains an nonexistent file {}".format(filename, image_name)
             if attributes:
@@ -393,61 +419,81 @@ def find_errors_meta(filename, path):
     def find_capture_date_errors(metadata):
         capture_date = metadata["capture_date"]
         if not isinstance(capture_date, datetime.datetime):
-            yield "data in capture_date is not a date format"
+            yield "Invalid YAML capture_date {}".format(capture_date)
 
+    def find_capture_agent_errors(metadata):
+        capture_agent = metadata["capture_agent"]
+        if not isinstance(capture_agent, str):
+            yield "Invalid YAML capture_agent: {}".format(capture_agent)
+
+    summary_builder = result.SummaryDirector(source=filename)
     try:
         metadata = parse_yaml(filename=filename)
 
         try:
-            for error in find_pagedata_errors(metadata):
-                yield error
-        except KeyError as e:
-            yield "{} is missing key, {}".format(filename, e)
-
-        try:
             for error in find_capture_date_errors(metadata):
-                yield error
+                summary_builder.add_error(error)
+            for error in find_capture_agent_errors(metadata):
+                summary_builder.add_error(error)
+            for error in find_pagedata_errors(metadata):
+                summary_builder.add_error(error)
         except KeyError as e:
-            yield "{} is missing key, {}".format(filename, e)
+            summary_builder.add_error("{} is missing key, {}".format(filename, e))
     except yaml.YAMLError as e:
-        yield "Unable to read {}. Reason:{}".format(filename, e)
-
+        summary_builder.add_error("Unable to read {}. Reason:{}".format(filename, e))
+    except FileNotFoundError as e:
+        summary_builder.add_error("Missing {}".format(e))
+    return summary_builder.construct()
 
 
 def process_directory(path: str):
     # TODO validate directory name
     logger = logging.getLogger(__name__)
 
+    # Validate missing files
     logger.info("Looking for missing files in {}".format(path))
+    missing_errors = []
     for missing_file in find_missing_files(path):
         print(missing_file)
+        missing_errors.append(missing_file)
     else:
         logger.info("Found no missing files in {}".format(path))
 
     logger.info("Looking for extra subdirectories in {}".format(path))
+
+    extra_subdirectory_errors = []
     for extra_subdirectory in find_extra_subdirectory(path=path):
-        print(extra_subdirectory)
+        print(extra_subdirectory.message)
+        extra_subdirectory_errors.append(extra_subdirectory)
     else:
         logger.info("Found no extra subdirectories in {}".format(path))
 
-    # TODO turn checksum check back on
-    # checksum_report = os.path.join(path, "checksum.md5")
-    # logger.info("Validating checksums in {}".format(checksum_report))
-    # for failing_checksum in find_failing_checksums(path=path, report=checksum_report):
-    #     print(failing_checksum)
+    # Validate checksum
+    checksum_report = os.path.join(path, "checksum.md5")
+    logger.info("Validating checksums in {}".format(checksum_report))
+    checksum_errors = []
+    for failing_checksum in find_failing_checksums(path=path, report=checksum_report):
+        print(failing_checksum.message)
+        checksum_errors.append(failing_checksum)
 
+    # Validate MARC
     marc_file = os.path.join(path, "marc.xml")
     logger.info("Validating {}".format(marc_file))
+    marc_errors = []
     for error in find_errors_marc(filename=marc_file):
-        print(error)
+        marc_errors.append(error)
     else:
         logger.info("{} successfully validated".format(marc_file))
 
     # TODO: validate other xml files, currently ALTO
     yml_file = os.path.join(path, "meta.yml")
     logger.info("Validating {}".format(yml_file))
+    # yml_checksum_report_builder = result.SummaryDirector(source=yml_file)
+    yml_errors = []
     for error in find_errors_meta(filename=yml_file, path=path):
-        print(error)
+        print(error.message)
+        yml_errors.append(error)
     else:
         logger.info("{} successfully validated".format(yml_file))
-    pass
+
+    return yml_errors + marc_errors + checksum_errors + extra_subdirectory_errors + missing_errors
