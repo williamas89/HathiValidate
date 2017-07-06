@@ -17,7 +17,7 @@ MSVC = os.path.join(PYTHON_INSTALL_DIR, 'vcruntime140.dll')
 
 INCLUDE_FILES = [
     # "tests"
-    # "documentation.url",
+    "documentation.url",
     #     TODO: BUILD DOCUMENTATION
 ]
 
