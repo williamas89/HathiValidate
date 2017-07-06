@@ -1,9 +1,9 @@
 import abc
 import typing
 from collections.abc import Iterable
+
+
 class Result:
-
-
     def __init__(self, result_type):
         self.result_type = result_type
         self.source = None
