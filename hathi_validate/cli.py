@@ -31,10 +31,15 @@ def main():
 
     configure_logging.configure_logger(debug_mode=args.debug, log_file=args.log_debug)
 
+    errors = []
     for pkg in package.get_dirs(args.path):
         logger.info("Checking {}".format(pkg))
-        process.process_directory(pkg)
+        errors += process.process_directory(pkg)
 
+    print("================")
+
+    for i, error in enumerate(errors):
+        print(error)
 
 if __name__ == '__main__':
 
