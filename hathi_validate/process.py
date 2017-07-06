@@ -275,14 +275,14 @@ def find_errors_meta(filename, path):
 
     summary_builder = result.SummaryDirector(source=filename)
     try:
-        metadata = parse_yaml(filename=filename)
+        yml_metadata = parse_yaml(filename=filename)
 
         try:
-            for error in find_capture_date_errors(metadata):
+            for error in find_capture_date_errors(yml_metadata):
                 summary_builder.add_error(error)
-            for error in find_capture_agent_errors(metadata):
+            for error in find_capture_agent_errors(yml_metadata):
                 summary_builder.add_error(error)
-            for error in find_pagedata_errors(metadata):
+            for error in find_pagedata_errors(yml_metadata):
                 summary_builder.add_error(error)
         except KeyError as e:
             summary_builder.add_error("{} is missing key, {}".format(filename, e))
