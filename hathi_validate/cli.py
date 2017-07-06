@@ -3,12 +3,18 @@ import argparse
 
 import sys
 
-from hathi_validate import package, process, configure_logging
+from hathi_validate import package, process, configure_logging, report
+import hathi_validate
 
 
 def get_parser():
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--version',
+        action='version',
+        version=hathi_validate.__version__)
     parser.add_argument("path", help="Path to the hathipackages")
+    parser.add_argument("--save-report", dest="report_name", help="Save report to a file")
     debug_group = parser.add_argument_group("Debug")
     debug_group.add_argument(
         '--debug',
@@ -26,10 +32,16 @@ def main():
 
     configure_logging.configure_logger(debug_mode=args.debug, log_file=args.log_debug)
 
+    errors = []
     for pkg in package.get_dirs(args.path):
         logger.info("Checking {}".format(pkg))
-        process.process_directory(pkg)
+        errors += process.process_directory(pkg)
 
+    console_reporter = report.Report(report.ConsoleReport())
+    console_reporter.generate(errors)
+    if args.report_name:
+        text_reporter = report.Report(report.TextReport(args.report_name))
+        text_reporter.generate(errors)
 
 if __name__ == '__main__':
 

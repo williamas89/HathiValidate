@@ -209,7 +209,7 @@ def marc_file(tmpdir):
     p.write(dummy_marc)
     return p
 
-
+@pytest.mark.skip(reason="not ready yet")
 def test_find_failing_checksums(checksum_file):
     print(str(checksum_file))
     process.find_failing_checksums("", str(checksum_file))
