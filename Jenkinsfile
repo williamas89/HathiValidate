@@ -164,9 +164,7 @@ pipeline {
                 deleteDir()
                 unstash "msi"
                 sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
-                node{
-                    git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
-                }
+                git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
             }
         }
         stage("Update online documentation") {
