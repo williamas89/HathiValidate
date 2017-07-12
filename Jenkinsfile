@@ -174,8 +174,10 @@ pipeline {
                   pip install setuptools --upgrade
                   python setup.py install
                   ls -la
-                  deploymessage deployment.yml
+                  deploymessage deployment.yml --file message.txt
                  """
+                def message = readFile(message.txt)
+                echo "${message}"
             }
         }
         stage("Update online documentation") {
