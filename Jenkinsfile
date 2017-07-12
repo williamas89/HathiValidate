@@ -173,7 +173,7 @@ pipeline {
                       pip install setuptools --upgrade
                       python setup.py install
                       ls -la
-                      deploymessage deployment.yml --file message.txt
+                      deploymessage deployment.yml --save=message.txt
                   """
 
 
