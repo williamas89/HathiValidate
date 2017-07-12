@@ -177,8 +177,8 @@ pipeline {
                       python setup.py install
                       deploymessage deployment.yml --save=deployment_request.txt
                   """
-                    echo(readFile('deployment_request.txt'))
                     archiveArtifacts artifacts: "deployment_request.txt"
+                    echo(readFile('deployment_request.txt'))
                 }
             }
         }
