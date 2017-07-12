@@ -172,7 +172,6 @@ pipeline {
                       pip install --upgrade pip
                       pip install setuptools --upgrade
                       python setup.py install
-                      ls -la
                       deploymessage deployment.yml --save=message.txt
                   """
 
@@ -180,11 +179,7 @@ pipeline {
             }
             post {
                 success {
-                    node("success"){
-                        echo(readFile('message.txt'))
-
-                    }
-
+                    echo(readFile('message.txt'))
                 }
             }
         }
