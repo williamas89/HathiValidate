@@ -164,6 +164,7 @@ pipeline {
                 deleteDir()
                 unstash "msi"
                 sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
+                unstash "Source"
                 git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
                 sh """
                   ${env.PYTHON3} -m venv .env
