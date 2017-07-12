@@ -179,11 +179,15 @@ pipeline {
                   ls -la
                   deploymessage deployment.yml --file message.txt
                  """
-                    def message = readFile(message.txt)
-                    echo "${message}"
 
                 }
 
+            }
+            post {
+                success {
+                    def message = readFile(message.txt)
+                    echo "${message}"
+                }
             }
         }
         stage("Update online documentation") {
