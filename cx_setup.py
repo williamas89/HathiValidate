@@ -48,7 +48,6 @@ shortcut_table = [
         None,  # ShowCmd
         'TARGETDIR'  # WkDir
     ),
-    #TODO: turn back on when documentation exists
 ]
 
 if os.path.exists(MSVC):

@@ -1,60 +1,61 @@
 pipeline {
     agent any
     parameters {
-      string(name: "PROJECT_NAME", defaultValue: "Hathi Validate", description: "Name given to the project")
-      booleanParam(name: "UNIT_TESTS", defaultValue: true, description: "Run Automated Unit Tests")
+        string(name: "PROJECT_NAME", defaultValue: "Hathi Validate", description: "Name given to the project")
+        booleanParam(name: "UNIT_TESTS", defaultValue: true, description: "Run Automated Unit Tests")
 //      booleanParam(name: "STATIC_ANALYSIS", defaultValue: true, description: "Run static analysis tests")
-      booleanParam(name: "PACKAGE", defaultValue: true, description: "Create a Packages")
-      booleanParam(name: "DEPLOY", defaultValue: false, description: "Deploy SCCM")
-      booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
-      booleanParam(name: "UPDATE_DOCS", defaultValue: false, description: "Update the documentation")
-      string(name: 'URL_SUBFOLDER', defaultValue: "hathi_validate", description: 'The directory that the docs should be saved under')
+        booleanParam(name: "PACKAGE", defaultValue: true, description: "Create a Packages")
+        booleanParam(name: "DEPLOY", defaultValue: false, description: "Deploy SCCM")
+        booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
+        booleanParam(name: "UPDATE_DOCS", defaultValue: false, description: "Update the documentation")
+        string(name: 'URL_SUBFOLDER', defaultValue: "hathi_validate", description: 'The directory that the docs should be saved under')
     }
     stages {
-       stage("Cloning Source") {
-           agent any
+        stage("Cloning Source") {
+            agent any
 
-           steps {
-               deleteDir()
-               checkout scm
-               stash includes: '**', name: "Source", useDefaultExcludes: false
+            steps {
+                deleteDir()
+                checkout scm
+                stash includes: '**', name: "Source", useDefaultExcludes: false
+                stash includes: 'deployment.yml', name: "Deployment"
 
-           }
+            }
 
-       }
+        }
 
-       stage("Unit tests") {
-          when{
-            expression{params.UNIT_TESTS == true}
-          }
-          steps {
-              parallel(
-                "Windows": {
-                    node(label: 'Windows') {
-                        deleteDir()
-                        unstash "Source"
-                        bat "${env.TOX}  -e jenkins"
-                        junit 'reports/junit-*.xml'
+        stage("Unit tests") {
+            when {
+                expression { params.UNIT_TESTS == true }
+            }
+            steps {
+                parallel(
+                        "Windows": {
+                            node(label: 'Windows') {
+                                deleteDir()
+                                unstash "Source"
+                                bat "${env.TOX}  -e jenkins"
+                                junit 'reports/junit-*.xml'
 
-                    }
-                },
-                "Linux": {
-                    node(label: "!Windows") {
-                        deleteDir()
-                        unstash "Source"
-                        withEnv(["PATH=${env.PYTHON3}/..:${env.PATH}"]) {
-                            sh "${env.TOX}  -e jenkins"
+                            }
+                        },
+                        "Linux": {
+                            node(label: "!Windows") {
+                                deleteDir()
+                                unstash "Source"
+                                withEnv(["PATH=${env.PYTHON3}/..:${env.PATH}"]) {
+                                    sh "${env.TOX}  -e jenkins"
+                                }
+                                junit 'reports/junit-*.xml'
+                            }
                         }
-                        junit 'reports/junit-*.xml'
-                    }
-                }
-              )
-          }
+                )
+            }
         }
         stage("Documentation") {
             agent any
-            when{
-                expression{params.BUILD_DOCS == true}
+            when {
+                expression { params.BUILD_DOCS == true }
             }
             steps {
                 deleteDir()
@@ -79,8 +80,8 @@ pipeline {
             }
         }
         stage("Packaging") {
-            when{
-                expression{params.PACKAGE == true}
+            when {
+                expression { params.PACKAGE == true }
             }
             steps {
                 parallel(
@@ -97,12 +98,12 @@ pipeline {
                                 deleteDir()
                                 unstash "Source"
                                 bat """ ${env.PYTHON3} -m venv .env
-                              call .env/Scripts/activate.bat
-                              pip install -r requirements.txt
-                              python cx_setup.py bdist_msi --add-to-path=true
-                              """
+                          call .env/Scripts/activate.bat
+                          pip install -r requirements.txt
+                          python cx_setup.py bdist_msi --add-to-path=true
+                          """
 
-                                dir("dist"){
+                                dir("dist") {
                                     stash includes: "*.msi", name: "msi"
                                 }
 
@@ -114,22 +115,22 @@ pipeline {
                                 // validate_msi.py
 
                                 bat """
-                      ${env.PYTHON3} -m venv .env
-                      call .env/Scripts/activate.bat
-                      pip install --upgrade pip
-                      pip install setuptools --upgrade
-                      pip install -r requirements.txt
-                      python setup.py install
-
-                      echo Validating msi file(s)
-                      FOR /f "delims=" %%A IN ('dir /b /s *.msi') DO (
-                        python validate_msi.py ^"%%A^" frozen.yml
-                        if not %errorlevel%==0 (
-                          echo errorlevel=%errorlevel%
-                          exit /b %errorlevel%
-                          )
-                        )
-                      """
+                          ${env.PYTHON3} -m venv .env
+                          call .env/Scripts/activate.bat
+                          pip install --upgrade pip
+                          pip install setuptools --upgrade
+                          pip install -r requirements.txt
+                          python setup.py install
+    
+                          echo Validating msi file(s)
+                          FOR /f "delims=" %%A IN ('dir /b /s *.msi') DO (
+                            python validate_msi.py ^"%%A^" frozen.yml
+                            if not %errorlevel%==0 (
+                              echo errorlevel=%errorlevel%
+                              exit /b %errorlevel%
+                              )
+                            )
+                          """
                                 archiveArtifacts artifacts: "*.msi", fingerprint: true
                             }
                         },
@@ -142,10 +143,10 @@ pipeline {
                 )
             }
         }
-        stage("Deploy - Staging"){
+        stage("Deploy - Staging") {
             agent any
             when {
-                expression{params.DEPLOY == true && params.PACKAGE == true}
+                expression { params.DEPLOY == true && params.PACKAGE == true }
             }
             steps {
                 deleteDir()
@@ -155,21 +156,36 @@ pipeline {
             }
         }
 
-        stage("Deploy - SCCM upload"){
+        stage("Deploy - SCCM upload") {
             agent any
             when {
-                expression{params.DEPLOY == true && params.PACKAGE == true}
+                expression { params.DEPLOY == true && params.PACKAGE == true }
             }
             steps {
                 deleteDir()
                 unstash "msi"
                 sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
             }
+            post {
+                success {
+                    git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
+                    unstash "Deployment"
+                    sh """${env.PYTHON3} -m venv .env
+                      . .env/bin/activate
+                      pip install --upgrade pip
+                      pip install setuptools --upgrade
+                      python setup.py install
+                      deploymessage deployment.yml --save=deployment_request.txt
+                  """
+                    archiveArtifacts artifacts: "deployment_request.txt"
+                    echo(readFile('deployment_request.txt'))
+                }
+            }
         }
         stage("Update online documentation") {
             agent any
-            when{
-                expression{params.UPDATE_DOCS == true && params.BUILD_DOCS == true}
+            when {
+                expression { params.UPDATE_DOCS == true && params.BUILD_DOCS == true }
             }
 
             steps {
@@ -179,12 +195,12 @@ pipeline {
                     unstash "Documentation source"
                     try {
                         sh("rsync -rv -e \"ssh -i ${env.DCC_DOCS_KEY}\" docs/build/html/ ${env.DCC_DOCS_SERVER}/${params.URL_SUBFOLDER}/ --delete")
-                    } catch(error) {
+                    } catch (error) {
                         echo "Error with uploading docs"
                         throw error
                     }
                 }
             }
         }
-     }
-  }
+    }
+}
