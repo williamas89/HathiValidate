@@ -180,7 +180,11 @@ pipeline {
             }
             post {
                 success {
-                    readFile 'message.txt'
+                    node("success"){
+                        def message = readFile 'message.txt'
+                        echo "message = ${message}"
+
+                    }
 
                 }
             }
