@@ -162,22 +162,25 @@ pipeline {
                 expression { params.DEPLOY == true && params.PACKAGE == true }
             }
             steps {
-                deleteDir()
-                unstash "msi"
-                sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
-                git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
-                unstash "Deployment"
-                sh """
-                  ${env.PYTHON3} -m venv .env
-                  . .env/bin/activate
-                  pip install --upgrade pip
-                  pip install setuptools --upgrade
-                  python setup.py install
-                  ls -la
-                  deploymessage deployment.yml --file message.txt
-                 """
-                def message = readFile(message.txt)
-                echo "${message}"
+                node{
+                    deleteDir()
+                    unstash "msi"
+                    sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
+                    git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
+                    unstash "Deployment"
+                    sh """
+                      ${env.PYTHON3} -m venv .env
+                      . .env/bin/activate
+                      pip install --upgrade pip
+                      pip install setuptools --upgrade
+                      python setup.py install
+                      ls -la
+                      deploymessage deployment.yml --file message.txt
+                     """
+                        def message = readFile(message.txt)
+                        echo "${message}"
+                }
+
             }
         }
         stage("Update online documentation") {
