@@ -162,25 +162,20 @@ pipeline {
                 expression { params.DEPLOY == true && params.PACKAGE == true }
             }
             steps {
-                node('MSI') {
-                    deleteDir()
-                    unstash "msi"
-                    sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
-                }
-                node("Deploy_message"){
-                    git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
-                    unstash "Deployment"
-                    sh """
-                  ${env.PYTHON3} -m venv .env
-                  . .env/bin/activate
-                  pip install --upgrade pip
-                  pip install setuptools --upgrade
-                  python setup.py install
-                  ls -la
-                  deploymessage deployment.yml --file message.txt
-                 """
+                deleteDir()
+                unstash "msi"
+                sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
+                git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
+                unstash "Deployment"
+                sh """${env.PYTHON3} -m venv .env
+                      . .env/bin/activate
+                      pip install --upgrade pip
+                      pip install setuptools --upgrade
+                      python setup.py install
+                      ls -la
+                      deploymessage deployment.yml --file message.txt
+                  """
 
-                }
 
             }
             post {
