@@ -162,7 +162,7 @@ pipeline {
                 expression { params.DEPLOY == true && params.PACKAGE == true }
             }
             steps {
-                node{
+                node('d'){
                     deleteDir()
                     unstash "msi"
                     sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
