@@ -1,60 +1,60 @@
 pipeline {
     agent any
     parameters {
-      string(name: "PROJECT_NAME", defaultValue: "Hathi Validate", description: "Name given to the project")
-      booleanParam(name: "UNIT_TESTS", defaultValue: true, description: "Run Automated Unit Tests")
+        string(name: "PROJECT_NAME", defaultValue: "Hathi Validate", description: "Name given to the project")
+        booleanParam(name: "UNIT_TESTS", defaultValue: true, description: "Run Automated Unit Tests")
 //      booleanParam(name: "STATIC_ANALYSIS", defaultValue: true, description: "Run static analysis tests")
-      booleanParam(name: "PACKAGE", defaultValue: true, description: "Create a Packages")
-      booleanParam(name: "DEPLOY", defaultValue: false, description: "Deploy SCCM")
-      booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
-      booleanParam(name: "UPDATE_DOCS", defaultValue: false, description: "Update the documentation")
-      string(name: 'URL_SUBFOLDER', defaultValue: "hathi_validate", description: 'The directory that the docs should be saved under')
+        booleanParam(name: "PACKAGE", defaultValue: true, description: "Create a Packages")
+        booleanParam(name: "DEPLOY", defaultValue: false, description: "Deploy SCCM")
+        booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
+        booleanParam(name: "UPDATE_DOCS", defaultValue: false, description: "Update the documentation")
+        string(name: 'URL_SUBFOLDER', defaultValue: "hathi_validate", description: 'The directory that the docs should be saved under')
     }
     stages {
-       stage("Cloning Source") {
-           agent any
+        stage("Cloning Source") {
+            agent any
 
-           steps {
-               deleteDir()
-               checkout scm
-               stash includes: '**', name: "Source", useDefaultExcludes: false
+            steps {
+                deleteDir()
+                checkout scm
+                stash includes: '**', name: "Source", useDefaultExcludes: false
 
-           }
+            }
 
-       }
+        }
 
-       stage("Unit tests") {
-          when{
-            expression{params.UNIT_TESTS == true}
-          }
-          steps {
-              parallel(
-                "Windows": {
-                    node(label: 'Windows') {
-                        deleteDir()
-                        unstash "Source"
-                        bat "${env.TOX}  -e jenkins"
-                        junit 'reports/junit-*.xml'
+        stage("Unit tests") {
+            when {
+                expression { params.UNIT_TESTS == true }
+            }
+            steps {
+                parallel(
+                        "Windows": {
+                            node(label: 'Windows') {
+                                deleteDir()
+                                unstash "Source"
+                                bat "${env.TOX}  -e jenkins"
+                                junit 'reports/junit-*.xml'
 
-                    }
-                },
-                "Linux": {
-                    node(label: "!Windows") {
-                        deleteDir()
-                        unstash "Source"
-                        withEnv(["PATH=${env.PYTHON3}/..:${env.PATH}"]) {
-                            sh "${env.TOX}  -e jenkins"
+                            }
+                        },
+                        "Linux": {
+                            node(label: "!Windows") {
+                                deleteDir()
+                                unstash "Source"
+                                withEnv(["PATH=${env.PYTHON3}/..:${env.PATH}"]) {
+                                    sh "${env.TOX}  -e jenkins"
+                                }
+                                junit 'reports/junit-*.xml'
+                            }
                         }
-                        junit 'reports/junit-*.xml'
-                    }
-                }
-              )
-          }
+                )
+            }
         }
         stage("Documentation") {
             agent any
-            when{
-                expression{params.BUILD_DOCS == true}
+            when {
+                expression { params.BUILD_DOCS == true }
             }
             steps {
                 deleteDir()
@@ -79,41 +79,41 @@ pipeline {
             }
         }
         stage("Packaging") {
-            when{
-                expression{params.PACKAGE == true}
+            when {
+                expression { params.PACKAGE == true }
             }
             steps {
                 parallel(
-                    "Windows Wheel": {
-                        node(label: "Windows") {
-                            deleteDir()
-                            unstash "Source"
-                            bat "${env.PYTHON3} setup.py bdist_wheel --universal"
-                            archiveArtifacts artifacts: "dist/**", fingerprint: true
-                        }
-                    },
-                    "Windows CX_Freeze MSI": {
-                        node(label: "Windows") {
-                            deleteDir()
-                            unstash "Source"
-                            bat """ ${env.PYTHON3} -m venv .env
+                        "Windows Wheel": {
+                            node(label: "Windows") {
+                                deleteDir()
+                                unstash "Source"
+                                bat "${env.PYTHON3} setup.py bdist_wheel --universal"
+                                archiveArtifacts artifacts: "dist/**", fingerprint: true
+                            }
+                        },
+                        "Windows CX_Freeze MSI": {
+                            node(label: "Windows") {
+                                deleteDir()
+                                unstash "Source"
+                                bat """ ${env.PYTHON3} -m venv .env
                           call .env/Scripts/activate.bat
                           pip install -r requirements.txt
                           python cx_setup.py bdist_msi --add-to-path=true
                           """
 
-                            dir("dist"){
-                                stash includes: "*.msi", name: "msi"
+                                dir("dist") {
+                                    stash includes: "*.msi", name: "msi"
+                                }
+
                             }
+                            node(label: "Windows") {
+                                deleteDir()
+                                git url: 'https://github.com/UIUCLibrary/ValidateMSI.git'
+                                unstash "msi"
+                                // validate_msi.py
 
-                        }
-                        node(label: "Windows") {
-                            deleteDir()
-                            git url: 'https://github.com/UIUCLibrary/ValidateMSI.git'
-                            unstash "msi"
-                            // validate_msi.py
-
-                            bat """
+                                bat """
                           ${env.PYTHON3} -m venv .env
                           call .env/Scripts/activate.bat
                           pip install --upgrade pip
@@ -130,22 +130,22 @@ pipeline {
                               )
                             )
                           """
-                                    archiveArtifacts artifacts: "*.msi", fingerprint: true
-                                }
-                            },
-                            "Source Release": {
-                                deleteDir()
-                                unstash "Source"
-                                sh "${env.PYTHON3} setup.py sdist"
-                                archiveArtifacts artifacts: "dist/**", fingerprint: true
+                                archiveArtifacts artifacts: "*.msi", fingerprint: true
                             }
+                        },
+                        "Source Release": {
+                            deleteDir()
+                            unstash "Source"
+                            sh "${env.PYTHON3} setup.py sdist"
+                            archiveArtifacts artifacts: "dist/**", fingerprint: true
+                        }
                 )
             }
         }
-        stage("Deploy - Staging"){
+        stage("Deploy - Staging") {
             agent any
             when {
-                expression{params.DEPLOY == true && params.PACKAGE == true}
+                expression { params.DEPLOY == true && params.PACKAGE == true }
             }
             steps {
                 deleteDir()
@@ -155,22 +155,29 @@ pipeline {
             }
         }
 
-        stage("Deploy - SCCM upload"){
+        stage("Deploy - SCCM upload") {
             agent any
             when {
-                expression{params.DEPLOY == true && params.PACKAGE == true}
+                expression { params.DEPLOY == true && params.PACKAGE == true }
             }
             steps {
                 deleteDir()
                 unstash "msi"
                 sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
                 git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
+                sh """
+                  ${env.PYTHON3} -m venv .env
+                  . .env/bin/activate
+                  pip install --upgrade pip
+                  pip install setuptools --upgrade
+                  python setup.py install
+                 """
             }
         }
         stage("Update online documentation") {
             agent any
-            when{
-                expression{params.UPDATE_DOCS == true && params.BUILD_DOCS == true}
+            when {
+                expression { params.UPDATE_DOCS == true && params.BUILD_DOCS == true }
             }
 
             steps {
@@ -180,12 +187,12 @@ pipeline {
                     unstash "Documentation source"
                     try {
                         sh("rsync -rv -e \"ssh -i ${env.DCC_DOCS_KEY}\" docs/build/html/ ${env.DCC_DOCS_SERVER}/${params.URL_SUBFOLDER}/ --delete")
-                    } catch(error) {
+                    } catch (error) {
                         echo "Error with uploading docs"
                         throw error
                     }
                 }
             }
         }
-     }
-  }
+    }
+}
