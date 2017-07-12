@@ -18,6 +18,7 @@ pipeline {
                 deleteDir()
                 checkout scm
                 stash includes: '**', name: "Source", useDefaultExcludes: false
+                stash includes: 'deployment.yml', name: "Deployment"
 
             }
 
@@ -164,8 +165,8 @@ pipeline {
                 deleteDir()
                 unstash "msi"
                 sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
-                unstash "Source"
                 git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
+                unstash "Deployment"
                 sh """
                   ${env.PYTHON3} -m venv .env
                   . .env/bin/activate
