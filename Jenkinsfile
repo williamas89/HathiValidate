@@ -84,61 +84,61 @@ pipeline {
             }
             steps {
                 parallel(
-                        "Windows Wheel": {
-                            node(label: "Windows") {
-                                deleteDir()
-                                unstash "Source"
-                                bat "${env.PYTHON3} setup.py bdist_wheel --universal"
-                                archiveArtifacts artifacts: "dist/**", fingerprint: true
-                            }
-                        },
-                        "Windows CX_Freeze MSI": {
-                            node(label: "Windows") {
-                                deleteDir()
-                                unstash "Source"
-                                bat """ ${env.PYTHON3} -m venv .env
-                              call .env/Scripts/activate.bat
-                              pip install -r requirements.txt
-                              python cx_setup.py bdist_msi --add-to-path=true
-                              """
-
-                                dir("dist"){
-                                    stash includes: "*.msi", name: "msi"
-                                }
-
-                            }
-                            node(label: "Windows") {
-                                deleteDir()
-                                git url: 'https://github.com/UIUCLibrary/ValidateMSI.git'
-                                unstash "msi"
-                                // validate_msi.py
-
-                                bat """
-                      ${env.PYTHON3} -m venv .env
-                      call .env/Scripts/activate.bat
-                      pip install --upgrade pip
-                      pip install setuptools --upgrade
-                      pip install -r requirements.txt
-                      python setup.py install
-
-                      echo Validating msi file(s)
-                      FOR /f "delims=" %%A IN ('dir /b /s *.msi') DO (
-                        python validate_msi.py ^"%%A^" frozen.yml
-                        if not %errorlevel%==0 (
-                          echo errorlevel=%errorlevel%
-                          exit /b %errorlevel%
-                          )
-                        )
-                      """
-                                archiveArtifacts artifacts: "*.msi", fingerprint: true
-                            }
-                        },
-                        "Source Release": {
+                    "Windows Wheel": {
+                        node(label: "Windows") {
                             deleteDir()
                             unstash "Source"
-                            sh "${env.PYTHON3} setup.py sdist"
+                            bat "${env.PYTHON3} setup.py bdist_wheel --universal"
                             archiveArtifacts artifacts: "dist/**", fingerprint: true
                         }
+                    },
+                    "Windows CX_Freeze MSI": {
+                        node(label: "Windows") {
+                            deleteDir()
+                            unstash "Source"
+                            bat """ ${env.PYTHON3} -m venv .env
+                          call .env/Scripts/activate.bat
+                          pip install -r requirements.txt
+                          python cx_setup.py bdist_msi --add-to-path=true
+                          """
+
+                            dir("dist"){
+                                stash includes: "*.msi", name: "msi"
+                            }
+
+                        }
+                        node(label: "Windows") {
+                            deleteDir()
+                            git url: 'https://github.com/UIUCLibrary/ValidateMSI.git'
+                            unstash "msi"
+                            // validate_msi.py
+
+                            bat """
+                          ${env.PYTHON3} -m venv .env
+                          call .env/Scripts/activate.bat
+                          pip install --upgrade pip
+                          pip install setuptools --upgrade
+                          pip install -r requirements.txt
+                          python setup.py install
+    
+                          echo Validating msi file(s)
+                          FOR /f "delims=" %%A IN ('dir /b /s *.msi') DO (
+                            python validate_msi.py ^"%%A^" frozen.yml
+                            if not %errorlevel%==0 (
+                              echo errorlevel=%errorlevel%
+                              exit /b %errorlevel%
+                              )
+                            )
+                          """
+                                    archiveArtifacts artifacts: "*.msi", fingerprint: true
+                                }
+                            },
+                            "Source Release": {
+                                deleteDir()
+                                unstash "Source"
+                                sh "${env.PYTHON3} setup.py sdist"
+                                archiveArtifacts artifacts: "dist/**", fingerprint: true
+                            }
                 )
             }
         }
@@ -164,6 +164,9 @@ pipeline {
                 deleteDir()
                 unstash "msi"
                 sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
+                node(){
+                    git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
+                }
             }
         }
         stage("Update online documentation") {
