@@ -134,7 +134,7 @@ pipeline {
                                 }
                             },
                             "Source Release": {
-                                deleteDir()
+                                deleteDir(label: "any")
                                 unstash "Source"
                                 sh "${env.PYTHON3} setup.py sdist"
                                 archiveArtifacts artifacts: "dist/**", fingerprint: true
