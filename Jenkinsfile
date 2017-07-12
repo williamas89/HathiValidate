@@ -134,7 +134,7 @@ pipeline {
                                 }
                             },
                             "Source Release": {
-                                deleteDir(label: "any")
+                                deleteDir()
                                 unstash "Source"
                                 sh "${env.PYTHON3} setup.py sdist"
                                 archiveArtifacts artifacts: "dist/**", fingerprint: true
@@ -164,7 +164,7 @@ pipeline {
                 deleteDir()
                 unstash "msi"
                 sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
-                node(){
+                node{
                     git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
                 }
             }
