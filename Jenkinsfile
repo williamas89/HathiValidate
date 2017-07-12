@@ -171,6 +171,7 @@ pipeline {
                   pip install --upgrade pip
                   pip install setuptools --upgrade
                   python setup.py install
+                  deploymessage deployment.yml
                  """
             }
         }
