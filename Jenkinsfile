@@ -165,21 +165,20 @@ pipeline {
                 deleteDir()
                 unstash "msi"
                 sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
-                git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
-                unstash "Deployment"
-                sh """${env.PYTHON3} -m venv .env
+            }
+            post {
+                success {
+                    git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
+                    unstash "Deployment"
+                    sh """${env.PYTHON3} -m venv .env
                       . .env/bin/activate
                       pip install --upgrade pip
                       pip install setuptools --upgrade
                       python setup.py install
-                      deploymessage deployment.yml --save=message.txt
+                      deploymessage deployment.yml --save=deployment_request.txt
                   """
-
-
-            }
-            post {
-                success {
-                    echo(readFile('message.txt'))
+                    echo(readFile('deployment_request.txt'))
+                    archiveArtifacts artifacts: "deployment_request.txt"
                 }
             }
         }
