@@ -162,13 +162,18 @@ pipeline {
                 expression { params.DEPLOY == true && params.PACKAGE == true }
             }
             steps {
-                node('d'){
-                    deleteDir()
-                    unstash "msi"
-                    sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
-                    git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
-                    unstash "Deployment"
-                    sh """
+                node('MSI') {
+                    stage("Deploying"){
+                        deleteDir()
+                        unstash "msi"
+                        sh "rsync -rv ./ ${env.SCCM_UPLOAD_FOLDER}/"
+                    }
+                }
+                node("Deploy_message"){
+                    stage("Generate email message"){
+                        git url: 'https://github.com/UIUCLibrary/sccm_deploy_message_generator.git'
+                        unstash "Deployment"
+                        sh """
                       ${env.PYTHON3} -m venv .env
                       . .env/bin/activate
                       pip install --upgrade pip
@@ -179,6 +184,8 @@ pipeline {
                      """
                         def message = readFile(message.txt)
                         echo "${message}"
+
+                    }
                 }
 
             }
