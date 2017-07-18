@@ -82,6 +82,7 @@ setup(
     options={
         "build_exe": build_exe_options,
         "bdist_msi": {
+            "upgrade-code": "{9BCAE3C6-BF07-409A-9846-4C7BB474120A}",
             "data": {
                 "Shortcut": shortcut_table,
                 "Directory": directory_table
