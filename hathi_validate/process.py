@@ -187,12 +187,12 @@ def find_failing_checksums(path, report) -> result.ResultSummary:
     report_builder = result.SummaryDirector(source=path)
     try:
         for report_md5_hash, filename in extracts_checksums(report):
-            logger.info("Calculating the md5 checksum hash for {}".format(filename))
+            logger.debug("Calculating the md5 checksum hash for {}".format(filename))
             file_path = os.path.join(path, filename)
             try:
                 file_md5_hash = calculate_md5(filename=file_path)
                 if file_md5_hash != report_md5_hash:
-                    report_builder.add_error("Checksum doesn't match for {}".format(filename))
+                    report_builder.add_error("Checksum listed in \"{}\" doesn't match for \"{}\"".format(os.path.basename(report), filename))
                 else:
                     logger.info("{} successfully matches md5 hash in {}".format(filename, os.path.basename(report)))
             except FileNotFoundError as e:
@@ -298,7 +298,7 @@ def process_directory(path: str):
     logger = logging.getLogger(__name__)
 
     # Validate missing files
-    logger.info("Looking for missing files in {}".format(path))
+    logger.debug("Looking for missing files in {}".format(path))
     missing_errors = []
     for missing_file in find_missing_files(path):
         print(missing_file)
@@ -306,7 +306,7 @@ def process_directory(path: str):
     else:
         logger.info("Found no missing files in {}".format(path))
 
-    logger.info("Looking for extra subdirectories in {}".format(path))
+    logger.debug("Looking for extra subdirectories in {}".format(path))
 
     extra_subdirectory_errors = []
     for extra_subdirectory in find_extra_subdirectory(path=path):
